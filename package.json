@@ -1,0 +1,20 @@
+{
+  "name": "appmagic_test_assignment",
+  "version": "1.0.0",
+  "description": "Test assignment for AppMagic",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "npx playwright test"
+  },
+  "author": "Ekaterina Mavliutova",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.1",
+    "eslint": "^9.16.0",
+    "eslint-plugin-playwright": "^2.1.0",
+    "globals": "^15.13.0"
+  }
+}
