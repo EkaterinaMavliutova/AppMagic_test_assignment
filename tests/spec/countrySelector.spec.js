@@ -3,62 +3,76 @@ import { expect } from '@playwright/test';
 import attachScreenshotToReport from '../utils/utils';
 import { faker } from '@faker-js/faker';
 
-test('should be possible to choose country', async ({ appMagic: { topApps } }) => {
-  await expect(topApps.title).toBeVisible();
-  await topApps.filters.countrySelector.open();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeVisible();
+let selector;
 
-  const allCountries = await topApps.filters.countrySelector.getAllCountries();
-  const firstCountry = allCountries[0];
-  const firstCountryName = await firstCountry.textContent();
-  const countryWithoutCode = firstCountryName.slice(2);
-  await topApps.filters.countrySelector.fillInput(countryWithoutCode);
-
-  await expect(firstCountry).toBeVisible();
-  await firstCountry.click();
-
-  await expect(topApps.filters.countrySelector.selectorElement).toHaveText(
-    firstCountryName
-  );
+test.beforeEach(async ({ appMagic: { topApps } }) => {
+  selector = topApps.filters.countrySelector;
 });
 
-test("should be possible to clear input", async ({ appMagic: { topApps } }, testInfo) => {
-  await topApps.filters.countrySelector.open();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeVisible();
+test('should be possible to choose country', async () => {
+  await selector.open();
+  await expect(selector.dropdown).toBeVisible();
 
-  await topApps.filters.countrySelector.fillInput(faker.string.alphanumeric(10));
-  await expect(topApps.filters.countrySelector.selectorForm).toContainText(topApps.filters.countrySelector.noDataMessage);
+  const {countryButton, countryName} = await selector.getRandomCountry();
+  await selector.fillInput(countryName);
+  await countryButton.click();
 
-  await attachScreenshotToReport(topApps.filters.countrySelector.selectorForm, 'No data screenshot', testInfo);
-
-  await topApps.filters.countrySelector.clearInput();
-  await expect(topApps.filters.countrySelector.countryInput).toHaveAttribute(
-    "placeholder",
-    topApps.filters.countrySelector.placeholderText
-  );
+  expect(await selector.getSelectedValue()).toBe(countryName);
 });
 
-test("should close selector two ways", async ({ appMagic: { topApps } }) => {
-  await topApps.filters.countrySelector.open();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeVisible();
+test('should be possible to clear input', async () => {
+  await selector.open();
+  await expect(selector.dropdown).toBeVisible();
 
-  await topApps.filters.countrySelector.closeByMouseClick();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeHidden();
+  await selector.fillInput('anyText');
+  expect(await selector.getInputValue()).toBe('anyText');
 
-  await topApps.filters.countrySelector.open();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeVisible();
+  await selector.clearInput();
 
-  await topApps.filters.countrySelector.closeByKeyboardClick();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeHidden();
+  await expect(selector.input).toHaveAttribute('placeholder', selector.placeholderText);
 });
 
-test("input should accept max 255 characters string", async ({ appMagic: { topApps } }) => {
+test('should show message when no country match filled value', async ({}, testInfo) => {
+  await selector.open();
+  await expect(selector.dropdown).toBeVisible();
+
+  const countryList = await selector.getCountryList();
+  const randomStr = faker.string.alphanumeric(10);
+
+  const isNotCountry = countryList.every((item) => randomStr !== item);
+  await selector.fillInput(randomStr);
+
+  expect(isNotCountry).toBeTruthy();
+  await expect(selector.dropdown).toContainText(selector.noDataMessage);
+  await attachScreenshotToReport(selector.dropdown, 'No data screenshot', testInfo);
+});
+
+test('should be possible to close selector by mouse click()', async () => {
+  await selector.open();
+  await expect(selector.dropdown).toBeVisible();
+
+  await selector.closeByMouseClick();
+
+  await expect(selector.dropdown).toBeHidden();
+});
+
+test('should be possible to close selector by keyboard click()', async () => {
+  await selector.open();
+  await expect(selector.dropdown).toBeVisible();
+
+  await selector.closeByKeyboardClick();
+
+  await expect(selector.dropdown).toBeHidden();
+});
+
+test("input should accept max 255 characters string", async () => {
+  await selector.open();
+  await expect(selector.dropdown).toBeVisible();
   const strOf300characters = faker.string.alphanumeric(300);
-  await topApps.filters.countrySelector.open();
-  await expect(topApps.filters.countrySelector.selectorForm).toBeVisible();
 
-  await topApps.filters.countrySelector.fillInput(strOf300characters);
-  const inputValue = await topApps.filters.countrySelector.getInputValue();
+  await selector.fillInput(strOf300characters);
+  const inputValue = await selector.getInputValue();
+
   expect(inputValue).toHaveLength(255);
   expect(inputValue).toBe(strOf300characters.slice(0, 255));
 });

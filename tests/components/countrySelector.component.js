@@ -1,37 +1,60 @@
 import BasePage from '../pages/base.page';
+import { faker } from '@faker-js/faker';
 
 export default class CountrySelector extends BasePage {
   constructor(page) {
     super(page);
-    this.selectorElement = this.page.locator('css=selector:has-text("Geography")').locator('css=[clickelementref]');
-    this.selectorForm = this.page.locator('css=country-single-select-panel');
-    this.formOuterArea = this.page.locator('css=div.am-dropdown-backdrop');
-    this.countryInput = this.selectorForm.getByRole('textbox');
+    this.element = this.page.locator('css=selector:has-text("Geography")').locator('css=[clickelementref]');
+    this.dropdown = this.page.locator('css=country-single-select-panel');
+    this.input = this.dropdown.getByRole('textbox');
     this.clearInputButton = this.page.locator('css=.g-clear-search-icon');
+    this.countriesList = this.dropdown.locator('css=div:has(> div.region-title:has-text("Countries"))').getByRole('button');
+    this.outerArea = this.page.locator('css=div.am-dropdown-backdrop');
     this.noDataMessage = 'Nothing to display';
     this.placeholderText = 'Start typing country name...';
   }
 
   async open() {
-    this.selectorElement.click();
+    this.element.click();
   }
 
   async closeByMouseClick() {
-    await this.formOuterArea.click();
+    await this.outerArea.click();
   }
 
   async closeByKeyboardClick() {
     await this.page.keyboard.press('Escape');
   }
 
-  async getAllCountries() {
-    const countries = await this.selectorForm.locator('css=div:has(> div.region-title:has-text("Countries"))').getByRole('button').all();
+  async getCountryList() {
+    const countries = await this.countriesList.allTextContents();
+    const countryNames = countries.map((item) => item.slice(2));
 
-    return countries;
+    return countryNames;
+  }
+
+  async getRandomCountry() {
+    const countries = await this.countriesList.all();
+    const countriesCount = countries.length;
+    const randomIndex = faker.number.int({ max: countriesCount });
+    const countryName = await countries[randomIndex].textContent();
+    const countryNameWithoutCode = countryName.slice(2);
+    const countryLocator = this.countriesList.filter({ hasText: countryNameWithoutCode });
+
+    return {
+      countryButton: countryLocator,
+      countryName: countryNameWithoutCode,
+    };
+  }
+
+  async getSelectedValue() {
+    const selectedValue = await this.element.locator('css=span.text-overflow').textContent();
+
+    return selectedValue;
   }
 
   async fillInput(countryName) {
-    await this.countryInput.fill(countryName);
+    await this.input.fill(countryName);
   }
 
   async clearInput() {
@@ -39,7 +62,7 @@ export default class CountrySelector extends BasePage {
   }
 
   async getInputValue() {
-    const inputValue = await this.countryInput.inputValue();
+    const inputValue = await this.input.inputValue();
 
     return inputValue;
   }
